@@ -5,6 +5,7 @@ import Navbar from '../components/Navbar';
 import Button from '../components/Button';
 import ImageGallery from '../components/ImageGallery';
 import ProductCard from '../components/ProductCard';
+import ProductDetailSkeleton from '../components/ProductDetailSkeleton';
 import { Minus, Plus, ArrowLeft, ShieldCheck } from 'lucide-react';
 
 const ProductDetail = () => {
@@ -48,28 +49,7 @@ const ProductDetail = () => {
     return (
       <>
         <Navbar />
-        <div style={{ 
-          padding: 'var(--spacing-3xl) var(--spacing-xl)', 
-          textAlign: 'center',
-          minHeight: '60vh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
-          <div style={{
-            width: '48px',
-            height: '48px',
-            border: '3px solid var(--border-color)',
-            borderTop: '3px solid var(--brand-color)',
-            borderRadius: '50%',
-            animation: 'spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite',
-            marginBottom: 'var(--spacing-lg)'
-          }} />
-          <p style={{ fontSize: '15px', fontWeight: '500', color: 'var(--text-light)' }}>
-            Inspecting quality...
-          </p>
-        </div>
+        <ProductDetailSkeleton />
       </>
     );
   }

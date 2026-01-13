@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { getProducts, getCategories } from '../services/api';
 import Navbar from '../components/Navbar';
 import CategorySection from '../components/CategorySection';
+import ProductCardSkeleton from '../components/ProductCardSkeleton';
 
 const Home = () => {
   const [productsByCategory, setProductsByCategory] = useState({});
@@ -151,23 +152,24 @@ const Home = () => {
       {/* Products by Category */}
       <div className="container" style={{ paddingBottom: 'var(--spacing-3xl)' }}>
         {loading ? (
-          <div style={{
-            textAlign: 'center',
-            padding: 'var(--spacing-3xl) var(--spacing-xl)',
-            color: 'var(--text-light)'
-          }}>
-            <div style={{
-              width: '48px',
-              height: '48px',
-              border: '3px solid var(--border-color)',
-              borderTop: '3px solid var(--brand-color)',
-              borderRadius: '50%',
-              animation: 'spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite',
-              margin: '0 auto var(--spacing-lg)'
-            }} />
-            <p style={{ fontSize: '15px', fontWeight: '500', color: 'var(--text-light)' }}>
-              Curating your vibe...
-            </p>
+          <div>
+            <h2 style={{ 
+              fontSize: '28px', 
+              fontWeight: '900', 
+              marginBottom: 'var(--spacing-xl)',
+              color: 'var(--text-color)'
+            }}>
+              Loading Collections...
+            </h2>
+            <div className="grid" style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
+              gap: 'var(--spacing-xl)' 
+            }}>
+              {[...Array(8)].map((_, i) => (
+                <ProductCardSkeleton key={i} />
+              ))}
+            </div>
           </div>
         ) : orderedCategories.length === 0 ? (
           <div className="glass" style={{
