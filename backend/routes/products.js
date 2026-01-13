@@ -10,7 +10,7 @@ router.get('/', async (req, res) => {
     try {
         const { category } = req.query;
         const filter = category ? { category } : {};
-        const products = await Product.find(filter).sort('name');
+        const products = await Product.find(filter).sort('name').lean();
         res.send(products);
     } catch (error) {
         res.status(500).send('Server Error');

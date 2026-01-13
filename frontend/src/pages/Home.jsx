@@ -14,13 +14,17 @@ const Home = () => {
 
   const fetchData = async () => {
     try {
-      const [productsRes, categoriesRes] = await Promise.all([
-        getProducts(),
-        getCategories()
-      ]);
-      
-      const { data: products } = productsRes;
+      // Start both requests in parallel
+      const productsPromise = getProducts();
+      const categoriesPromise = getCategories();
+
+      // Wait for categories first (smaller payload, faster)
+      const categoriesRes = await categoriesPromise;
       const { data: categoryMetadata } = categoriesRes;
+
+      // Then get products
+      const productsRes = await productsPromise;
+      const { data: products } = productsRes;
       
       // Group products by category
       const grouped = products.reduce((acc, product) => {
@@ -31,21 +35,18 @@ const Home = () => {
         return acc;
       }, {});
       
-      setProductsByCategory(grouped);
-
       // Determine the final category order
-      // 1. Start with categories that have explicit order from metadata
       const metaOrder = categoryMetadata.map(c => c.name);
-      
-      // 2. Find any categories present in products but not in metadata (fallback)
       const existingCats = Object.keys(grouped);
       const missingInMeta = existingCats.filter(c => !metaOrder.includes(c)).sort();
-      
-      // 3. Final order: Metadata first, then alphabetical fallback for others
-      setOrderedCategories([...metaOrder.filter(c => existingCats.includes(c)), ...missingInMeta]);
+      const finalOrder = [...metaOrder.filter(c => existingCats.includes(c)), ...missingInMeta];
+
+      // Set everything at once to trigger a single render
+      setProductsByCategory(grouped);
+      setOrderedCategories(finalOrder);
+      setLoading(false);
     } catch (error) {
       console.error('Error fetching home data:', error);
-    } finally {
       setLoading(false);
     }
   };
