@@ -1,11 +1,20 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { optimizeCloudinaryImage } from '../utils/imageOptimization';
 
 const ProductCard = ({ product }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   // Handle both old format (images as strings) and new format (images as objects)
-  const imageUrl = product.images?.[0]?.url || product.images?.[0] || '';
+  const rawImageUrl = product.images?.[0]?.url || product.images?.[0] || '';
+  
+  // Optimize image for card display (smaller, auto format/quality)
+  const imageUrl = optimizeCloudinaryImage(rawImageUrl, {
+    width: 400,  // Cards are max 300px, so 400px is good for retina
+    quality: 'auto:good',
+    format: 'auto'
+  });
 
   return (
     <Link 

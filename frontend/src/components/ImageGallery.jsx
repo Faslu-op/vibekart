@@ -1,13 +1,28 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { optimizeCloudinaryImage } from '../utils/imageOptimization';
 
 const ImageGallery = ({ images = [] }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   // Handle both old format (strings) and new format (objects with url)
-  const imageList = images.map(img => 
-    typeof img === 'string' ? { url: img } : img
-  );
+  const imageList = images.map(img => {
+    const rawUrl = typeof img === 'string' ? img : img?.url || '';
+    return {
+      // Main image - optimized for detail view
+      url: optimizeCloudinaryImage(rawUrl, {
+        width: 1000,
+        quality: 'auto:good',
+        format: 'auto'
+      }),
+      // Thumbnail - highly optimized
+      thumbnail: optimizeCloudinaryImage(rawUrl, {
+        width: 150,
+        quality: 'auto',
+        format: 'auto'
+      })
+    };
+  });
 
   const handlePrevious = () => {
     setCurrentIndex((prev) => (prev === 0 ? imageList.length - 1 : prev - 1));
