@@ -8,13 +8,20 @@ const Home = () => {
   const [productsByCategory, setProductsByCategory] = useState({});
   const [orderedCategories, setOrderedCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [retryCount]); // Re-fetch when retry count changes
 
   const fetchData = async () => {
     try {
+      setLoading(true);
+      setError(null);
+      
+      console.log('Fetching products and categories...');
+      
       // Start both requests in parallel
       const productsPromise = getProducts();
       const categoriesPromise = getCategories();
@@ -22,10 +29,12 @@ const Home = () => {
       // Wait for categories first (smaller payload, faster)
       const categoriesRes = await categoriesPromise;
       const { data: categoryMetadata } = categoriesRes;
+      console.log('Categories loaded:', categoryMetadata.length);
 
       // Then get products
       const productsRes = await productsPromise;
       const { data: products } = productsRes;
+      console.log('Products loaded:', products.length);
       
       // Group products by category
       const grouped = products.reduce((acc, product) => {
@@ -46,10 +55,27 @@ const Home = () => {
       setProductsByCategory(grouped);
       setOrderedCategories(finalOrder);
       setLoading(false);
+      console.log('Data loaded successfully!');
     } catch (error) {
       console.error('Error fetching home data:', error);
+      
+      // Determine error message
+      let errorMessage = 'Unable to load products. ';
+      if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+        errorMessage += 'The server is taking too long to respond. This usually happens when the server is "waking up" from sleep mode.';
+      } else if (error.message.includes('Network Error')) {
+        errorMessage += 'Please check your internet connection.';
+      } else {
+        errorMessage += 'Please try again.';
+      }
+      
+      setError(errorMessage);
       setLoading(false);
     }
+  };
+
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1);
   };
 
   const categories = Object.keys(productsByCategory).sort();
@@ -156,11 +182,20 @@ const Home = () => {
             <h2 style={{ 
               fontSize: '28px', 
               fontWeight: '900', 
-              marginBottom: 'var(--spacing-xl)',
+              marginBottom: 'var(--spacing-md)',
               color: 'var(--text-color)'
             }}>
               Loading Collections...
             </h2>
+            <p style={{
+              fontSize: '14px',
+              color: 'var(--text-light)',
+              marginBottom: 'var(--spacing-xl)',
+              fontWeight: '500'
+            }}>
+              {retryCount > 0 && `Retry attempt ${retryCount}... `}
+              First load may take 20-30 seconds as the server wakes up. Future loads will be instant! ⏳
+            </p>
             <div className="grid" style={{ 
               display: 'grid', 
               gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
@@ -170,6 +205,53 @@ const Home = () => {
                 <ProductCardSkeleton key={i} />
               ))}
             </div>
+          </div>
+        ) : error ? (
+          <div className="glass" style={{
+            textAlign: 'center',
+            padding: 'var(--spacing-3xl) var(--spacing-xl)',
+            borderRadius: 'var(--radius-2xl)',
+            animation: 'fadeInUp 0.8s ease forwards',
+            maxWidth: '600px',
+            margin: '0 auto'
+          }}>
+            <div style={{
+              fontSize: '48px',
+              marginBottom: 'var(--spacing-lg)'
+            }}>⚠️</div>
+            <h2 style={{
+              fontSize: '24px',
+              fontWeight: '900',
+              marginBottom: 'var(--spacing-md)',
+              color: 'var(--text-color)'
+            }}>
+              Connection Issue
+            </h2>
+            <p style={{
+              color: 'var(--text-light)',
+              fontSize: '15px',
+              lineHeight: '1.6',
+              marginBottom: 'var(--spacing-xl)'
+            }}>
+              {error}
+            </p>
+            <button
+              onClick={handleRetry}
+              style={{
+                padding: '14px 32px',
+                background: 'var(--brand-gradient)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 'var(--radius-lg)',
+                fontSize: '15px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                transition: 'var(--transition-base)',
+                boxShadow: '0 4px 12px rgba(124, 58, 237, 0.3)'
+              }}
+            >
+              Try Again
+            </button>
           </div>
         ) : orderedCategories.length === 0 ? (
           <div className="glass" style={{

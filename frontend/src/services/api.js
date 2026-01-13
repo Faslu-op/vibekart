@@ -2,7 +2,35 @@ import axios from 'axios';
 
 const api = axios.create({
     baseURL: 'https://vibekart.onrender.com/api',
+    timeout: 30000, // 30 second timeout (Render cold starts can take 20-30s)
 });
+
+// Retry logic for failed requests
+api.interceptors.response.use(
+    response => response,
+    async error => {
+        const config = error.config;
+        
+        // If request failed and hasn't been retried yet
+        if (!config || !config.retry) {
+            config.retry = 0;
+        }
+        
+        config.retry += 1;
+        
+        // Retry up to 3 times for network/timeout errors
+        if (config.retry <= 3 && (error.code === 'ECONNABORTED' || error.message.includes('timeout') || error.message.includes('Network Error'))) {
+            console.log(`Retrying request... Attempt ${config.retry}/3`);
+            
+            // Exponential backoff: wait 1s, then 2s, then 4s
+            await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, config.retry - 1)));
+            
+            return api(config);
+        }
+        
+        return Promise.reject(error);
+    }
+);
 
 // Add token to requests if available
 api.interceptors.request.use(config => {
