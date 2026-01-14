@@ -39,6 +39,9 @@ const ProductCard = ({ product }) => {
         {/* Image Container */}
         <div style={{
           width: '100%',
+          height: '280px', // Explicit fixed height
+          minHeight: '280px',
+          maxHeight: '280px',
           aspectRatio: '1/1',
           overflow: 'hidden',
           backgroundColor: '#f8fafc',
@@ -51,9 +54,13 @@ const ProductCard = ({ product }) => {
             style={{
               width: '100%',
               height: '100%',
+              minHeight: '280px',
+              maxHeight: '280px',
               objectFit: 'cover',
+              objectPosition: 'center',
               transition: 'var(--transition-slow)',
-              transform: isHovered ? 'scale(1.05)' : 'scale(1)'
+              transform: isHovered ? 'scale(1.05)' : 'scale(1)',
+              display: 'block'
             }}
           />
           

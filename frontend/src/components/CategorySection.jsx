@@ -166,6 +166,9 @@ const CategorySection = ({ category, products }) => {
             key={`${product._id}-${index}`}
             style={{
               flex: '0 0 280px', // Precise width for executive spacing
+              minWidth: '280px',
+              maxWidth: '280px',
+              width: '280px',
               scrollSnapAlign: 'start'
             }}
           >
