@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const api = axios.create({
     baseURL: 'https://vibekart.onrender.com/api',
-    timeout: 30000, // 30 second timeout (Render cold starts can take 20-30s)
+    timeout: 10000, // 10 second timeout (reduced since cache provides instant fallback)
 });
 
 // Retry logic for failed requests

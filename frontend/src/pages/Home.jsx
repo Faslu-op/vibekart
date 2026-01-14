@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { getProducts, getCategories } from '../services/api';
+import { productsCache, categoriesCache } from '../services/cacheService';
 import Navbar from '../components/Navbar';
 import CategorySection from '../components/CategorySection';
 import ProductCardSkeleton from '../components/ProductCardSkeleton';
@@ -20,44 +21,96 @@ const Home = () => {
       setLoading(true);
       setError(null);
       
-      console.log('Fetching products and categories...');
+      console.log('🚀 Starting data fetch...');
+      const fetchStartTime = Date.now();
       
-      // Start both requests in parallel
-      const productsPromise = getProducts();
-      const categoriesPromise = getCategories();
-
-      // Wait for categories first (smaller payload, faster)
-      const categoriesRes = await categoriesPromise;
-      const { data: categoryMetadata } = categoriesRes;
-      console.log('Categories loaded:', categoryMetadata.length);
-
-      // Then get products
-      const productsRes = await productsPromise;
-      const { data: products } = productsRes;
-      console.log('Products loaded:', products.length);
+      // 🎯 CACHE-FIRST STRATEGY: Load from cache instantly
+      const cachedProducts = productsCache.get();
+      const cachedCategories = categoriesCache.get();
       
-      // Group products by category
-      const grouped = products.reduce((acc, product) => {
-        const cat = product.category;
-        if (!cat) return acc;
-        if (!acc[cat]) acc[cat] = [];
-        acc[cat].push(product);
-        return acc;
-      }, {});
+      if (cachedProducts && cachedCategories) {
+        console.log('⚡ Loading from cache instantly!');
+        
+        // Group products by category
+        const grouped = cachedProducts.reduce((acc, product) => {
+          const cat = product.category;
+          if (!cat) return acc;
+          if (!acc[cat]) acc[cat] = [];
+          acc[cat].push(product);
+          return acc;
+        }, {});
+        
+        // Determine the final category order
+        const metaOrder = cachedCategories.map(c => c.name);
+        const existingCats = Object.keys(grouped);
+        const missingInMeta = existingCats.filter(c => !metaOrder.includes(c)).sort();
+        const finalOrder = [...metaOrder.filter(c => existingCats.includes(c)), ...missingInMeta];
+        
+        // Show cached data immediately
+        setProductsByCategory(grouped);
+        setOrderedCategories(finalOrder);
+        setLoading(false);
+        console.log('✅ Cached data displayed in <1s');
+      }
       
-      // Determine the final category order
-      const metaOrder = categoryMetadata.map(c => c.name);
-      const existingCats = Object.keys(grouped);
-      const missingInMeta = existingCats.filter(c => !metaOrder.includes(c)).sort();
-      const finalOrder = [...metaOrder.filter(c => existingCats.includes(c)), ...missingInMeta];
+      // 🔄 BACKGROUND REFRESH: Always fetch fresh data
+      try {
+        console.log('🔄 Fetching fresh data in background...');
+        
+        // Start both requests in parallel
+        const productsPromise = getProducts();
+        const categoriesPromise = getCategories();
 
-      // Set everything at once to trigger a single render
-      setProductsByCategory(grouped);
-      setOrderedCategories(finalOrder);
-      setLoading(false);
-      console.log('Data loaded successfully!');
+        // Wait for categories first (smaller payload, faster)
+        const categoriesRes = await categoriesPromise;
+        const { data: categoryMetadata } = categoriesRes;
+        console.log('📦 Fresh categories loaded:', categoryMetadata.length);
+        
+        // Cache categories immediately
+        categoriesCache.set(categoryMetadata);
+
+        // Then get products
+        const productsRes = await productsPromise;
+        const { data: products } = productsRes;
+        console.log('📦 Fresh products loaded:', products.length);
+        
+        // Cache products immediately
+        productsCache.set(products);
+        
+        // Group products by category
+        const grouped = products.reduce((acc, product) => {
+          const cat = product.category;
+          if (!cat) return acc;
+          if (!acc[cat]) acc[cat] = [];
+          acc[cat].push(product);
+          return acc;
+        }, {});
+        
+        // Determine the final category order
+        const metaOrder = categoryMetadata.map(c => c.name);
+        const existingCats = Object.keys(grouped);
+        const missingInMeta = existingCats.filter(c => !metaOrder.includes(c)).sort();
+        const finalOrder = [...metaOrder.filter(c => existingCats.includes(c)), ...missingInMeta];
+
+        // Update UI with fresh data
+        setProductsByCategory(grouped);
+        setOrderedCategories(finalOrder);
+        setLoading(false);
+        
+        const fetchEndTime = Date.now();
+        console.log(`✅ Fresh data loaded in ${((fetchEndTime - fetchStartTime) / 1000).toFixed(2)}s`);
+      } catch (fetchError) {
+        // If we had cached data, we already showed it, so just log the error
+        if (cachedProducts && cachedCategories) {
+          console.warn('⚠️ Fresh data fetch failed, but cached data is displayed', fetchError);
+          // Don't set error state since we have cached data showing
+        } else {
+          // No cached data, show error
+          throw fetchError;
+        }
+      }
     } catch (error) {
-      console.error('Error fetching home data:', error);
+      console.error('❌ Error fetching home data:', error);
       
       // Determine error message
       let errorMessage = 'Unable to load products. ';
